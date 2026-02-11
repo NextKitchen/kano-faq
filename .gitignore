@@ -1,25 +1,3 @@
 # Dependencies
+.pnpm-store/
 node_modules/
-
-# Build
-dist/
-.astro/
-
-# Environment
-.env
-.env.*
-
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Logs
-*.log
-npm-debug.log*
-pnpm-debug.log*

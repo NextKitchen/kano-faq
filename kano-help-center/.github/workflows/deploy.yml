@@ -1,0 +1,44 @@
+# Deploy Kano Help Center to Cloudflare Pages
+# When this repo is standalone (kano-help-center), use as-is.
+# When inside a monorepo, set ROOT_DIR to the help-center folder and uncomment working-directory.
+name: Deploy to Cloudflare Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+        env:
+          ASTRO_TELEMETRY_DISABLED: 1
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: kano-help-center
+          directory: dist
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}

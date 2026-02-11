@@ -1,0 +1,49 @@
+# Deploy Kano Help Center to Cloudflare Pages（monorepo kano-faq-main）
+# 說明中心在 kano-help-center/ 子目錄，需指定 working-directory
+name: Deploy Help Center to Cloudflare Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "kano-help-center/**"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    defaults:
+      run:
+        working-directory: kano-help-center
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+          cache-dependency-path: kano-help-center/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+        env:
+          ASTRO_TELEMETRY_DISABLED: 1
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: kano-help-center
+          directory: kano-help-center/dist
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
