@@ -35,6 +35,7 @@ jobs:
           ASTRO_TELEMETRY_DISABLED: 1
 
       - name: Deploy to Cloudflare Pages
+        id: deploy
         uses: cloudflare/pages-action@v1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -42,3 +43,16 @@ jobs:
           projectName: kano-help-center
           directory: dist
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      # Re-index RAG after deploy so Kano Agent has latest docs. Set INGEST_SECRET in GitHub and Cloudflare.
+      - name: Trigger RAG ingest
+        if: success()
+        env:
+          INGEST_SECRET: ${{ secrets.INGEST_SECRET }}
+        run: |
+          if [ -n "$INGEST_SECRET" ]; then
+            curl -sS -X POST "https://help.kano.site/api/ingest" \
+              -H "Content-Type: application/json" \
+              -H "Authorization: Bearer $INGEST_SECRET" \
+              --max-time 300 --fail-with-body || true
+          fi

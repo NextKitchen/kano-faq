@@ -36,12 +36,18 @@ Cloudflare Pages build troubleshooting: [docs/cloudflare-pages-deploy.md](docs/c
 
 **Kano Agent & internal use:**
 
-- [docs/rag-and-agent.md](docs/rag-and-agent.md) — RAG 資料來源與 chunk 策略（供 Agent 索引）
+- **Kano Agent** 已嵌入說明中心右下角，使用者可即時詢問操作問題；答案來自 RAG（說明中心文件）。
+- [docs/rag-and-agent.md](docs/rag-and-agent.md) — RAG 資料來源、chunk 策略、說明中心嵌入、更新流程（ingest API、Vectorize）
+- 部署後需建立 Cloudflare Vectorize index 並設定 AI / VECTOR_INDEX 綁定；首次或內容更新後呼叫 `POST /api/ingest`（Bearer token）重建索引。詳見 rag-and-agent.md。
 - [docs/internal-qa-mapping.md](docs/internal-qa-mapping.md) — 內訓與客服 QA 對照表
 
 **「編輯此頁」導向 GitHub（避免 404、與 Cloudflare Docs 相同 fork 流程）：**
 
 - [docs/edit-link-github.md](docs/edit-link-github.md) — baseUrl 設定、monorepo 子目錄、環境變數
+
+**內部維護 — 選單／側欄結構：**
+
+- [docs/sidebar-menu-structure.md](docs/sidebar-menu-structure.md) — 選單定義位置、目前結構對照、新增區塊／頁面方式
 
 ## Content
 

@@ -1,0 +1,11 @@
+---
+import Default from "@astrojs/starlight/components/PageFrame.astro";
+import KanoAgent from "../KanoAgent.astro";
+---
+
+<Default>
+  <slot slot="header" name="header" />
+  <slot slot="sidebar" name="sidebar" />
+  <slot />
+</Default>
+<KanoAgent />

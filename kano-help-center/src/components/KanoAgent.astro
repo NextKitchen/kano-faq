@@ -1,0 +1,280 @@
+---
+// Kano Agent: floating chat widget in bottom-right
+// Sends questions to /api/chat and displays the answer
+---
+
+<div id="kano-agent-root" class="kano-agent">
+  <button
+    type="button"
+    class="kano-agent-toggle"
+    aria-label="開啟 Kano Agent"
+    aria-expanded="false"
+    aria-controls="kano-agent-panel"
+  >
+    <span class="kano-agent-toggle-icon" aria-hidden="true">?</span>
+  </button>
+  <div
+    id="kano-agent-panel"
+    class="kano-agent-panel"
+    hidden
+    role="dialog"
+    aria-label="Kano Agent"
+  >
+    <div class="kano-agent-header">
+      <span class="kano-agent-title">Kano Agent</span>
+      <button type="button" class="kano-agent-close" aria-label="關閉">×</button>
+    </div>
+    <p class="kano-agent-intro">答案來自 Kano 說明中心，有任何操作問題都可以問我。</p>
+    <div class="kano-agent-messages" id="kano-agent-messages"></div>
+    <form class="kano-agent-form" id="kano-agent-form">
+      <label for="kano-agent-input" class="sl-only">輸入問題</label>
+      <input
+        type="text"
+        id="kano-agent-input"
+        class="kano-agent-input"
+        placeholder="例如：登入失敗怎麼辦？"
+        autocomplete="off"
+      />
+      <button type="submit" class="kano-agent-send">送出</button>
+    </form>
+  </div>
+</div>
+
+<style>
+  .kano-agent {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    z-index: 999;
+    font-family: var(--sl-font);
+  }
+
+  .kano-agent-toggle {
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 50%;
+    border: none;
+    background: var(--sl-color-accent);
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 132, 250, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .kano-agent-toggle:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 16px rgba(0, 132, 250, 0.5);
+  }
+  .kano-agent-toggle-icon {
+    font-size: 1.5rem;
+    font-weight: 700;
+  }
+
+  .kano-agent-panel {
+    position: absolute;
+    bottom: 4rem;
+    right: 0;
+    width: min(22rem, calc(100vw - 2rem));
+    max-height: 28rem;
+    background: var(--sl-color-bg);
+    border: 1px solid var(--sl-color-hairline);
+    border-radius: 1rem;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .kano-agent-panel[hidden] {
+    display: none !important;
+  }
+
+  .kano-agent-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--sl-color-hairline);
+    background: var(--sl-color-bg-nav);
+  }
+  .kano-agent-title {
+    font-weight: 600;
+    font-size: var(--sl-text-sm);
+  }
+  .kano-agent-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    color: var(--sl-color-gray-2);
+    padding: 0 0.25rem;
+  }
+  .kano-agent-close:hover {
+    color: var(--sl-color-text);
+  }
+
+  .kano-agent-intro {
+    font-size: var(--sl-text-sm);
+    color: var(--sl-color-gray-2);
+    padding: 0.5rem 1rem;
+    margin: 0;
+    border-bottom: 1px solid var(--sl-color-hairline);
+  }
+
+  .kano-agent-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.75rem 1rem;
+    min-height: 8rem;
+    max-height: 16rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .kano-agent-msg {
+    font-size: var(--sl-text-sm);
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    max-width: 90%;
+  }
+  .kano-agent-msg.user {
+    align-self: flex-end;
+    background: var(--sl-color-accent-low);
+    color: var(--sl-color-accent-high);
+  }
+  .kano-agent-msg.assistant {
+    align-self: flex-start;
+    background: var(--sl-color-bg-sidebar);
+    border: 1px solid var(--sl-color-hairline);
+    white-space: pre-wrap;
+  }
+  .kano-agent-msg.error {
+    align-self: flex-start;
+    background: var(--sl-color-accent-low);
+    color: var(--sl-color-accent-high);
+  }
+
+  .kano-agent-form {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--sl-color-hairline);
+  }
+  .kano-agent-input {
+    flex: 1;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--sl-color-hairline);
+    border-radius: 0.5rem;
+    font-size: var(--sl-text-sm);
+    background: var(--sl-color-bg);
+    color: var(--sl-color-text);
+  }
+  .kano-agent-input::placeholder {
+    color: var(--sl-color-gray-3);
+  }
+  .kano-agent-send {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 0.5rem;
+    background: var(--sl-color-accent);
+    color: white;
+    font-size: var(--sl-text-sm);
+    cursor: pointer;
+  }
+  .kano-agent-send:hover {
+    filter: brightness(1.1);
+  }
+  .kano-agent-send:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .sl-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+</style>
+
+<script>
+  (function () {
+    const root = document.getElementById("kano-agent-root");
+    if (!root) return;
+
+    const toggle = root.querySelector(".kano-agent-toggle");
+    const panel = document.getElementById("kano-agent-panel");
+    const closeBtn = root.querySelector(".kano-agent-close");
+    const form = document.getElementById("kano-agent-form");
+    const input = document.getElementById("kano-agent-input");
+    const sendBtn = form?.querySelector('button[type="submit"]');
+    const messagesEl = document.getElementById("kano-agent-messages");
+
+    const locale = document.documentElement.lang || "zh-Hant";
+
+    function openPanel() {
+      if (!panel) return;
+      panel.hidden = false;
+      toggle?.setAttribute("aria-expanded", "true");
+      input?.focus();
+    }
+
+    function closePanel() {
+      if (!panel) return;
+      panel.hidden = true;
+      toggle?.setAttribute("aria-expanded", "false");
+    }
+
+    function appendMessage(role, text) {
+      if (!messagesEl) return;
+      const div = document.createElement("div");
+      div.className = `kano-agent-msg ${role}`;
+      div.textContent = text;
+      messagesEl.appendChild(div);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    toggle?.addEventListener("click", () => {
+      if (panel?.hidden) openPanel();
+      else closePanel();
+    });
+    closeBtn?.addEventListener("click", closePanel);
+
+    form?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const question = input?.value?.trim();
+      if (!question) return;
+
+      appendMessage("user", question);
+      if (input) input.value = "";
+        if (sendBtn) sendBtn.disabled = true;
+
+      try {
+        const res = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: question, locale }),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          appendMessage("error", data?.error || "無法取得回覆，請稍後再試。");
+          return;
+        }
+        appendMessage("assistant", data.answer || "沒有回覆內容。");
+      } catch (err) {
+        appendMessage("error", "連線失敗，請檢查網路後再試。");
+      } finally {
+        if (sendBtn) sendBtn.disabled = false;
+      }
+    });
+  })();
+</script>

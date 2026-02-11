@@ -9,10 +9,13 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "build": "node scripts/generate-chunks.mjs && astro build",
+    "generate-chunks": "node scripts/generate-chunks.mjs",
     "preview": "astro preview"
   },
   "dependencies": {
+    "@astrojs/cloudflare": "^12.6.12",
+    "@astrojs/sitemap": "^3.0.0",
     "@astrojs/starlight": "^0.34.1",
     "astro": "^5.0.0"
   },

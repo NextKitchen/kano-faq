@@ -1,6 +1,10 @@
 # Kano Agent：RAG 資料來源與 Chunk 策略
 
-本文件說明如何將 Kano 說明中心作為 Kano Agent（後台右下角 AI 助手）的 RAG（Retrieval Augmented Generation）知識來源，供開發與維運參考。
+本文件說明如何將 Kano 說明中心作為 Kano Agent（說明中心與後台右下角 AI 助手）的 RAG（Retrieval Augmented Generation）知識來源，供開發與維運參考。
+
+## 說明中心嵌入
+
+在 **help.kano.site** 本站右下角已嵌入 Kano Agent 浮動視窗：使用者瀏覽說明中心時可點擊按鈕開啟對話，輸入操作問題後由 AI 基於本說明中心文件即時回答。答案來源為本 RAG 索引，並於入口處註明「答案來自 Kano 說明中心」與 [說明中心連結](https://help.kano.site)。
 
 ## 資料來源
 
@@ -35,4 +39,11 @@
 ## 更新流程
 
 - 說明中心內容更新並部署後，RAG 索引需 **重新爬取或增量更新**，Agent 才會反映最新內容。
-- 建議在 CI/CD 部署 help.kano.site 成功後，觸發 Agent 側的 re-index 或定期全量更新（例如每日）。
+- **Build**：`pnpm build` 會先執行 `scripts/generate-chunks.mjs` 產生 `public/chunks.json`，再進行 Astro 建置。
+- **Ingest**：部署完成後呼叫 `POST https://help.kano.site/api/ingest`，並在 Header 帶上 `Authorization: Bearer <INGEST_SECRET>`。CI 已設定在部署成功後可選用此步驟（需在 GitHub 與 Cloudflare 設定同名 secret）。
+- 亦可手動觸發 re-index 或排程定期全量更新（例如每日）。
+
+## 技術備註
+
+- **Vectorize**：需在 Cloudflare 建立 Vectorize index（如 `kano-help-chunks`），並在 wrangler 綁定 `VECTOR_INDEX`。Embedding 使用 Workers AI `@cf/baai/bge-m3`，建立 index 時請依該模型維度設定（如 1024）。
+- **Chat API**：`POST /api/chat` 接受 `{ message, locale }`，回傳 `{ answer }`。

@@ -1,0 +1,102 @@
+---
+const { head, entry, siteTitle, locale } = Astro.locals.starlightRoute;
+const pathname = Astro.url.pathname;
+const baseUrl = Astro.url.origin;
+const canonicalUrl = new URL(Astro.url.pathname, baseUrl).href.replace(/\/?$/, "/");
+const title = entry?.data?.title ?? siteTitle;
+const description = entry?.data?.description ?? "";
+
+// Build JSON-LD scripts based on page type
+const jsonLdScripts: string[] = [];
+
+// BreadcrumbList: Home + current page
+const breadcrumbItems: { name: string; url: string }[] = [
+  { name: siteTitle, url: locale ? `${baseUrl}/${locale}/` : `${baseUrl}/` },
+];
+if (entry?.data?.title) {
+  breadcrumbItems.push({ name: title, url: canonicalUrl });
+}
+if (breadcrumbItems.length >= 2) {
+  jsonLdScripts.push(
+    JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: breadcrumbItems.map((item, i) => ({
+        "@type": "ListItem",
+        position: i + 1,
+        name: item.name,
+        item: item.url,
+      })),
+    })
+  );
+}
+
+// FAQ page: FAQPage schema (static list matching faq/index content)
+const pathNorm = pathname.replace(/^\/|\/$/g, "") || "";
+const isFaqPage = pathNorm === "faq" || pathNorm === "en/faq";
+if (isFaqPage) {
+  const isEn = pathNorm.startsWith("en");
+  const faqMainEntity = isEn
+    ? [
+        { question: "Do I need coding experience to use Kano?", answer: "No. Kano is designed for F&B and small businesses; you fill in information and Kano generates a one-page site." },
+        { question: "Is my Kano site secure? Does it have SSL?", answer: "Yes. All Kano sites include SSL (https)." },
+        { question: "Can I recover if I break my site?", answer: "Yes. Kano has draft and publish; you can revert or republish from the editor." },
+        { question: "Login failed?", answer: "Ensure the URL is kano.site, close the tab, and sign in again with Google." },
+        { question: "How do I rank on the first page?", answer: "Add location and brand type to your tagline, fill image ALT, and use AI optimization." },
+      ]
+    : [
+        { question: "我需要具備程式設計經驗才能使用 Kano 嗎？", answer: "完全不需要。Kano 針對餐飲與微型創業設計，您只需像填寫問卷一樣輸入資訊，Kano 會自動為您生成專業的一頁式網頁。" },
+        { question: "Kano 網站安全嗎？有 SSL 憑證嗎？", answer: "安全是我們的標配。所有 Kano 網站（包含免費版）皆內建 SSL 安全加密憑證（網址開頭為 https）。" },
+        { question: "登入失敗？", answer: "確認網址為 kano.site，關閉分頁後重新「用 Google 登入」。" },
+        { question: "進度會自動儲存嗎？草稿保留多久？", answer: "會，每 2 秒自動儲存；草稿保留 14 天。" },
+        { question: "如何讓網站排在 Google 第一頁？", answer: "標語加入地區與品牌類型、填寫圖片 ALT、善用編輯器內的 AI 優化。" },
+      ];
+  jsonLdScripts.push(
+    JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: faqMainEntity.map((q) => ({
+        "@type": "Question",
+        name: q.question,
+        acceptedAnswer: { "@type": "Answer", text: q.answer },
+      })),
+    })
+  );
+}
+
+// Index page: WebSite schema
+const isIndexPage = pathNorm === "" || pathNorm === "en";
+if (isIndexPage) {
+  jsonLdScripts.push(
+    JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: siteTitle,
+      url: baseUrl + (pathNorm ? `/${pathNorm}/` : "/"),
+      description: description || "Kano Help Center – 帳號登入、建站流程、編輯器、SEO、追蹤工具、網域與訂閱說明。",
+    })
+  );
+}
+
+// Doc pages (not index, not faq): Article schema
+const isDocPage = entry && !isIndexPage && !isFaqPage;
+if (isDocPage && title) {
+  jsonLdScripts.push(
+    JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "Article",
+      headline: title,
+      description: description || undefined,
+      url: canonicalUrl,
+      publisher: { "@type": "Organization", name: "Kano" },
+    })
+  );
+}
+---
+
+{head.map(({ tag: Tag, attrs, content }) => (
+  <Tag {...(attrs ?? {})} set:html={content ?? ""} />
+))}
+{jsonLdScripts.map((script) => (
+  <script type="application/ld+json" set:html={script} />
+))}

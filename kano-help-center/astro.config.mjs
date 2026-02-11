@@ -1,9 +1,14 @@
 import { defineConfig } from "astro/config";
+import cloudflare from "@astrojs/cloudflare";
+import sitemap from "@astrojs/sitemap";
 import starlight from "@astrojs/starlight";
 
 export default defineConfig({
   site: "https://help.kano.site",
+  output: "static",
+  adapter: cloudflare(),
   integrations: [
+    sitemap(),
     starlight({
       title: "Kano Help Center",
       logo: {
@@ -29,6 +34,12 @@ export default defineConfig({
         en: { label: "English", lang: "en" },
       },
       defaultLocale: "root",
+      head: [
+        { tag: "meta", attrs: { name: "author", content: "Kano" } },
+        { tag: "meta", attrs: { property: "og:type", content: "website" } },
+        { tag: "meta", attrs: { property: "og:site_name", content: "Kano Help Center" } },
+        { tag: "meta", attrs: { name: "twitter:card", content: "summary_large_image" } },
+      ],
       social: [
         { icon: "github", label: "GitHub", href: "https://github.com/NextKitchen/kano-help-center" },
       ],
@@ -43,7 +54,9 @@ export default defineConfig({
       // Search: add Algolia DocSearch when approved (https://docsearch.algolia.com/)
       // plugins: [starlightDocSearch({ appId: '...', apiKey: '...', indexName: '...' })],
       components: {
+        Head: "./src/components/overrides/Head.astro",
         Footer: "./src/components/overrides/Footer.astro",
+        PageFrame: "./src/components/overrides/PageFrame.astro",
       },
     }),
   ],
