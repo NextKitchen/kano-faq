@@ -32,6 +32,8 @@ Designed to deploy to **Cloudflare Pages**:
 
 Integration with the main kano.site app: [docs/integration-with-kano-site.md](docs/integration-with-kano-site.md).
 
+Cloudflare Pages build troubleshooting: [docs/cloudflare-pages-deploy.md](docs/cloudflare-pages-deploy.md).
+
 ## Content
 
 - **Root locale (繁體中文)** — `src/content/docs/`
