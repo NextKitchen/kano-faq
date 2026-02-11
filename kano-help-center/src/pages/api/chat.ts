@@ -3,8 +3,25 @@ import type { APIRoute } from "astro";
 export const prerender = false;
 
 const EMBEDDING_MODEL = "@cf/baai/bge-m3";
-const LLM_MODEL = "@cf/meta/llama-3.1-8b-instruct";
-const TOP_K = 5;
+const LLM_MODEL = "@cf/meta/llama-3.1-8b-instruct-fast";
+const TOP_K = 20;
+
+const RATE_LIMIT_REQUESTS = 5;
+const RATE_LIMIT_WINDOW_SEC = 60;
+
+function getClientIp(request: Request): string {
+  return request.headers.get("CF-Connecting-IP") ?? request.headers.get("X-Forwarded-For")?.split(",")[0]?.trim() ?? "unknown";
+}
+
+async function checkRateLimit(kv: KVNamespace, ip: string): Promise<{ allowed: boolean }> {
+  const minuteSlot = Math.floor(Date.now() / 60000);
+  const key = `chat:${ip}:${minuteSlot}`;
+  const raw = await kv.get(key);
+  const count = raw ? parseInt(raw, 10) : 0;
+  if (count >= RATE_LIMIT_REQUESTS) return { allowed: false };
+  await kv.put(key, String(count + 1), { expirationTtl: RATE_LIMIT_WINDOW_SEC + 60 });
+  return { allowed: true };
+}
 
 export const POST = (async ({ request, locals }) => {
   const runtime = locals.runtime as { env: Env } | undefined;
@@ -14,7 +31,18 @@ export const POST = (async ({ request, locals }) => {
       { status: 503, headers: { "Content-Type": "application/json" } }
     );
   }
-  const { AI: ai, VECTOR_INDEX: vectorIndex } = runtime.env;
+  const { AI: ai, VECTOR_INDEX: vectorIndex, RATE_LIMIT_KV: rateLimitKv } = runtime.env;
+
+  if (rateLimitKv) {
+    const ip = getClientIp(request);
+    const { allowed } = await checkRateLimit(rateLimitKv, ip);
+    if (!allowed) {
+      return new Response(
+        JSON.stringify({ error: "請求過於頻繁，請稍後再試。（每分鐘最多 5 次）" }),
+        { status: 429, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }
 
   let body: { message?: string; locale?: string };
   try {
@@ -47,13 +75,17 @@ export const POST = (async ({ request, locals }) => {
 
     const query = await vectorIndex.query(values, { topK: TOP_K, returnMetadata: true });
     const matches = query.matches ?? [];
-    const contextParts = matches
+    const formatMatch = (m: { metadata?: Record<string, unknown> }) => {
+      const meta = m.metadata as { title?: string; content?: string; source?: string };
+      return `【${meta.title ?? "無標題"}】\n${meta.content ?? ""}\n來源：${meta.source ?? ""}`;
+    };
+    let contextParts = matches
       .filter((m) => m.metadata && typeof (m.metadata as { locale?: string }).locale === "string")
       .filter((m) => (m.metadata as { locale?: string }).locale === locale)
-      .map((m) => {
-        const meta = m.metadata as { title?: string; content?: string; source?: string };
-        return `【${meta.title ?? "無標題"}】\n${meta.content ?? ""}\n來源：${meta.source ?? ""}`;
-      });
+      .map(formatMatch);
+    if (contextParts.length === 0) {
+      contextParts = matches.filter((m) => m.metadata).map(formatMatch);
+    }
     const context = contextParts.length > 0 ? contextParts.join("\n\n---\n\n") : "（目前沒有找到與問題直接相關的說明文件，請嘗試換一種問法或至說明中心搜尋。）";
 
     const systemPrompt = `你是 Kano 說明中心的 AI 助手。請僅根據以下「說明中心內容」回答使用者的操作問題。若內容中沒有足夠資訊，請誠實說明並建議使用者至 https://help.kano.site 搜尋或聯絡支援。回答請簡潔、友善，並以使用者選擇的語系（繁中或英文）回覆。`;
@@ -64,7 +96,7 @@ export const POST = (async ({ request, locals }) => {
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
       ],
-      max_tokens: 1024,
+      max_tokens: 512,
     });
 
     const answer = (llmResp as { response?: string })?.response ?? String(llmResp);
@@ -84,6 +116,7 @@ export const POST = (async ({ request, locals }) => {
 interface Env {
   AI: Fetcher & { run(model: string, options: unknown): Promise<unknown> };
   VECTOR_INDEX: VectorizeIndex;
+  RATE_LIMIT_KV?: KVNamespace;
 }
 
 interface VectorizeIndex {
