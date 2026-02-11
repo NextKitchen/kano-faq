@@ -54,25 +54,42 @@ export const POST = (async ({ request, locals }) => {
   const { AI: ai, VECTOR_INDEX: vectorIndex } = runtime.env;
   let indexed = 0;
 
-  for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
-    const batch = chunks.slice(i, i + BATCH_SIZE);
-    const vectors = await Promise.all(
-      batch.map(async (c) => {
-        const text = `${c.title}\n${c.content}`.slice(0, 8000);
-        const emb = await ai.run(EMBEDDING_MODEL, { text });
-        const values = (emb as { data?: number[][] })?.data?.[0];
-        if (!values || !Array.isArray(values)) throw new Error(`No embedding for ${c.id}`);
-        return { id: c.id, values, metadata: { title: c.title, source: c.source, content: c.content.slice(0, 4000), locale: c.locale } };
-      })
-    );
-    await vectorIndex.upsert(vectors);
-    indexed += vectors.length;
-  }
+  try {
+    for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
+      const batch = chunks.slice(i, i + BATCH_SIZE);
+      const vectors = await Promise.all(
+        batch.map(async (c) => {
+          const text = `${c.title}\n${c.content}`.slice(0, 8000);
+          const emb = await ai.run(EMBEDDING_MODEL, { text });
+          const values = (emb as { data?: number[][] })?.data?.[0];
+          if (!values || !Array.isArray(values)) throw new Error(`No embedding for ${c.id}`);
+          return {
+            id: c.id,
+            values,
+            metadata: {
+              title: c.title,
+              source: c.source,
+              content: c.content.slice(0, 4000),
+              locale: c.locale,
+            },
+          };
+        })
+      );
+      await vectorIndex.upsert(vectors);
+      indexed += vectors.length;
+    }
 
-  return new Response(JSON.stringify({ ok: true, indexed }), {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
-  });
+    return new Response(JSON.stringify({ ok: true, indexed }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    return new Response(JSON.stringify({ error: `ingest failed: ${message}`, indexed }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
 }) satisfies APIRoute;
 
 interface Env {
