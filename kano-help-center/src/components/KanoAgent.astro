@@ -7,7 +7,7 @@
   <button
     type="button"
     class="kano-agent-toggle"
-    aria-label="開啟 Kano Agent"
+    aria-label="開啟 Kano 小幫手"
     aria-expanded="false"
     aria-controls="kano-agent-panel"
   >
@@ -18,13 +18,12 @@
     class="kano-agent-panel"
     hidden
     role="dialog"
-    aria-label="Kano Agent"
+    aria-label="Kano 小幫手"
   >
     <div class="kano-agent-header">
-      <span class="kano-agent-title">Kano Agent</span>
+      <span class="kano-agent-title">Kano 小幫手</span>
       <button type="button" class="kano-agent-close" aria-label="關閉">×</button>
     </div>
-    <p class="kano-agent-intro">答案來自 Kano 說明中心，有任何操作問題都可以問我。</p>
     <div class="kano-agent-messages" id="kano-agent-messages"></div>
     <form class="kano-agent-form" id="kano-agent-form">
       <label for="kano-agent-input" class="sl-only">輸入問題</label>
@@ -115,14 +114,6 @@
     color: var(--sl-color-text);
   }
 
-  .kano-agent-intro {
-    font-size: var(--sl-text-sm);
-    color: var(--sl-color-gray-2);
-    padding: 0.5rem 1rem;
-    margin: 0;
-    border-bottom: 1px solid var(--sl-color-hairline);
-  }
-
   .kano-agent-messages {
     flex: 1;
     overflow-y: auto;
@@ -136,25 +127,36 @@
 
   .kano-agent-msg {
     font-size: var(--sl-text-sm);
-    padding: 0.5rem 0.75rem;
-    border-radius: 0.5rem;
-    max-width: 90%;
+    padding: 0.625rem 1rem;
+    border-radius: 1rem;
+    max-width: 85%;
+    line-height: 1.5;
+    word-break: break-word;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   }
   .kano-agent-msg.user {
     align-self: flex-end;
-    background: var(--sl-color-accent-low);
-    color: var(--sl-color-accent-high);
+    margin-left: auto;
+    background: #0d6efd;
+    color: white;
+    border-bottom-right-radius: 0.25rem;
   }
   .kano-agent-msg.assistant {
     align-self: flex-start;
-    background: var(--sl-color-bg-sidebar);
-    border: 1px solid var(--sl-color-hairline);
+    margin-right: auto;
+    background: #f1f5f9;
+    color: #334155;
+    border: 1px solid #e2e8f0;
     white-space: pre-wrap;
+    border-bottom-left-radius: 0.25rem;
   }
   .kano-agent-msg.error {
     align-self: flex-start;
-    background: var(--sl-color-accent-low);
-    color: var(--sl-color-accent-high);
+    margin-right: auto;
+    background: #fef2f2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+    border-bottom-left-radius: 0.25rem;
   }
 
   .kano-agent-form {
@@ -220,11 +222,16 @@
 
     const locale = document.documentElement.lang || "zh-Hant";
 
+    const INTRO_MSG = "答案來自 Kano 說明中心，有任何操作問題都可以問我。";
+
     function openPanel() {
       if (!panel) return;
       panel.hidden = false;
       toggle?.setAttribute("aria-expanded", "true");
       input?.focus();
+      if (messagesEl && messagesEl.children.length === 0) {
+        appendMessage("assistant", INTRO_MSG);
+      }
     }
 
     function closePanel() {
@@ -233,10 +240,17 @@
       toggle?.setAttribute("aria-expanded", "false");
     }
 
+    const BUBBLE_STYLES = {
+      user: "font-size:0.875rem;padding:0.625rem 1rem;border-radius:1rem;max-width:85%;line-height:1.5;word-break:break-word;box-shadow:0 1px 3px rgba(0,0,0,0.08);align-self:flex-end;margin-left:auto;background:#0d6efd;color:white;border-bottom-right-radius:0.25rem;",
+      assistant: "font-size:0.875rem;padding:0.625rem 1rem;border-radius:1rem;max-width:85%;line-height:1.5;word-break:break-word;box-shadow:0 1px 3px rgba(0,0,0,0.08);align-self:flex-start;margin-right:auto;background:#f1f5f9;color:#334155;border:1px solid #e2e8f0;white-space:pre-wrap;border-bottom-left-radius:0.25rem;",
+      error: "font-size:0.875rem;padding:0.625rem 1rem;border-radius:1rem;max-width:85%;line-height:1.5;word-break:break-word;box-shadow:0 1px 3px rgba(0,0,0,0.08);align-self:flex-start;margin-right:auto;background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;border-bottom-left-radius:0.25rem;",
+    };
+
     function appendMessage(role, text) {
       if (!messagesEl) return;
       const div = document.createElement("div");
       div.className = `kano-agent-msg ${role}`;
+      div.style.cssText = BUBBLE_STYLES[role] || BUBBLE_STYLES.assistant;
       div.textContent = text;
       messagesEl.appendChild(div);
       messagesEl.scrollTop = messagesEl.scrollHeight;
