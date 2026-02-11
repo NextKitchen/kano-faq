@@ -1,0 +1,38 @@
+/* Kano Help Center – align with Kano Design System (Layer 1: SaaS) */
+
+/* ---- 1. Brand accent: Kano Blue #0084FA (hsl(208, 100%, 49%)) ---- */
+
+/* Dark mode (default :root) */
+:root {
+  --sl-color-accent: hsl(208, 100%, 49%);
+  --sl-color-accent-low: hsl(208, 54%, 20%);
+  --sl-color-accent-high: hsl(208, 100%, 85%);
+}
+
+/* Light mode */
+:root[data-theme='light'],
+[data-theme='light'] {
+  --sl-color-accent: hsl(208, 100%, 49%);
+  --sl-color-accent-low: hsl(208, 88%, 90%);
+  --sl-color-accent-high: hsl(208, 80%, 30%);
+}
+
+/* ---- 2. Border radius: rounded-xl (1.5rem) per Design System ---- */
+
+.sidebar-pane,
+.sidebar-content,
+.header,
+.right-sidebar-panel .sl-container {
+  border-radius: 1.5rem;
+}
+
+/* Buttons and pill-style controls */
+.sl-link-button.primary,
+[data-theme='light'] .sl-link-button.primary,
+site-search button,
+starlight-menu-button button {
+  border-radius: 1rem;
+}
+
+/* ---- 3. Optional: content width / padding (unchanged unless needed) ---- */
+/* --sl-content-width and --sl-content-pad-x remain at Starlight defaults */
