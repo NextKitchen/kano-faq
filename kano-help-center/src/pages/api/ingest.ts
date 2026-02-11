@@ -3,7 +3,7 @@ import type { APIRoute } from "astro";
 export const prerender = false;
 
 const EMBEDDING_MODEL = "@cf/baai/bge-m3";
-const BATCH_SIZE = 50;
+const BATCH_SIZE = 20;
 
 interface Chunk {
   id: string;
@@ -57,24 +57,22 @@ export const POST = (async ({ request, locals }) => {
   try {
     for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
       const batch = chunks.slice(i, i + BATCH_SIZE);
-      const vectors = await Promise.all(
-        batch.map(async (c) => {
-          const text = `${c.title}\n${c.content}`.slice(0, 8000);
-          const emb = await ai.run(EMBEDDING_MODEL, { text });
-          const values = (emb as { data?: number[][] })?.data?.[0];
-          if (!values || !Array.isArray(values)) throw new Error(`No embedding for ${c.id}`);
-          return {
-            id: c.id,
-            values,
-            metadata: {
-              title: c.title,
-              source: c.source,
-              content: c.content.slice(0, 4000),
-              locale: c.locale,
-            },
-          };
-        })
-      );
+      const texts = batch.map((c) => `${c.title}\n${c.content}`.slice(0, 8000));
+      const emb = await ai.run(EMBEDDING_MODEL, { text: texts });
+      const data = (emb as { data?: number[][] })?.data;
+      if (!data || !Array.isArray(data) || data.length !== batch.length) {
+        throw new Error(`Batch embedding failed: got ${data?.length ?? 0} vectors for ${batch.length} chunks`);
+      }
+      const vectors = batch.map((c, j) => ({
+        id: c.id,
+        values: data[j]!,
+        metadata: {
+          title: c.title,
+          source: c.source,
+          content: c.content.slice(0, 4000),
+          locale: c.locale,
+        },
+      }));
       await vectorIndex.upsert(vectors);
       indexed += vectors.length;
     }
